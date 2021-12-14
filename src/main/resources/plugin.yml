@@ -1,0 +1,10 @@
+name: SlimefunRecipeManager
+version: '${project.version}'
+main: me.char321.sfrecipes.RecipePlugin
+api-version: 1.14
+depend: [ Slimefun ]
+description: A Slimefun Addon that allows you to adjust recipes. 
+
+commands:
+  genrecipes:
+    description: no
