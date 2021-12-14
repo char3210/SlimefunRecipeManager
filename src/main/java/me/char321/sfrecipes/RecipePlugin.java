@@ -30,8 +30,6 @@ public class RecipePlugin extends JavaPlugin implements SlimefunAddon {
     public void onEnable() {
         Bukkit.getScheduler().runTaskLater(this, () -> {
 
-            new Config(this);
-
             info("Loading recipes from recipes.yml...");
             this.recipes = new Config(this, "recipes.yml");
 
