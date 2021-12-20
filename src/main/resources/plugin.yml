@@ -7,4 +7,6 @@ description: A Slimefun Addon that allows you to adjust recipes.
 
 commands:
   genrecipes:
-    description: no
+    description: creates default recipes in recipes.yml and adds items to itemstacks.yml as needed
+  reload:
+    description: applies recipes in recipes.yml

@@ -29,7 +29,6 @@ public class RecipePlugin extends JavaPlugin implements SlimefunAddon {
     @Override
     public void onEnable() {
         Bukkit.getScheduler().runTaskLater(this, () -> {
-
             info("Loading recipes from recipes.yml...");
             this.recipes = new Config(this, "recipes.yml");
 
@@ -66,12 +65,19 @@ public class RecipePlugin extends JavaPlugin implements SlimefunAddon {
             for(Map.Entry<String, SlimefunItem> entry: Slimefun.getRegistry().getSlimefunItemIds().entrySet()) {
                 String id = entry.getKey();
                 SlimefunItem item = entry.getValue();
+
+                int output = item.getRecipeOutput().getAmount();
+                if(output != 1) {
+                    recipes.setValue(id + ".amount", item.getRecipeOutput().getAmount());
+                }
+
                 List<String> idrecipe = new ArrayList<>();
                 for(ItemStack ingredient : item.getRecipe()) {
                     String ingredientid = getId(ingredient);
                     idrecipe.add(ingredientid);
                     if(!itemExists(ingredientid)) {
-                        itemstacks.setValue(ingredientid, ingredient);
+                        ItemStack clone = new ItemStack(ingredient);
+                        itemstacks.setValue(ingredientid, clone);
                     }
                 }
                 recipes.setValue(id+".recipe", idrecipe.toArray(new String[0]));
