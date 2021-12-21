@@ -25,9 +25,7 @@ public class GenRecipesCommand extends SubCommand {
             SlimefunItem item = entry.getValue();
 
             int output = item.getRecipeOutput().getAmount();
-            if(output != 1) {
-                plugin.getRecipes().setValue(id + ".amount", item.getRecipeOutput().getAmount());
-            }
+            plugin.getRecipes().setValue(id + ".amount", output);
 
             List<String> idrecipe = new ArrayList<>();
             for(ItemStack ingredient : item.getRecipe()) {

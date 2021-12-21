@@ -39,7 +39,7 @@ CARGO_MOTOR:
 ```
 
 The `amount` specifies the output amount of the recipe (e.g. right now it outputs 4 cargo motors)<br>
-Note: if no amount is specified, it will default to one. <br>
+Note: if no amount is specified, it will default to its previous amount. <br>
 
 The recipe is a list of 9 material id's. They can be of either Slimefun items, addon items, or vanilla items.<br>
 If you want to specify no ingredient, simply use `AIR`. <br>
