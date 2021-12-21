@@ -54,6 +54,9 @@ public class ItemUtils {
             if(id.isPresent()) {
                 return id.get();
             }
+            if(item.hasItemMeta()) {
+                return "PLACEHOLDER";
+            }
             return item.getType().name();
         }
     }

@@ -31,7 +31,7 @@ public class GenRecipesCommand extends SubCommand {
             for(ItemStack ingredient : item.getRecipe()) {
                 String ingredientid = ItemUtils.getId(ingredient);
                 idrecipe.add(ingredientid);
-                if(!ItemUtils.itemExists(ingredientid)) {
+                if(!ItemUtils.itemExists(ingredientid) && !ingredientid.equals("PLACEHOLDER")) {
                     ItemStack clone = new ItemStack(ingredient);
                     plugin.getItemstacks().setValue(ingredientid, clone);
                 }

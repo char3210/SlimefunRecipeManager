@@ -63,7 +63,7 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
         List<String> recipe = recipes.getStringList(id + ".recipe");
         if(recipe.size() == 9) {
-            target.setRecipe(deserialize(recipe));
+            target.setRecipe(deserialize(recipe, target.getRecipe()));
         }
 
         int outputAmount = recipes.getInt(id + ".amount");
@@ -80,20 +80,25 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
         }
     }
 
-    public ItemStack[] deserialize(List<String> list) {
+    public ItemStack[] deserialize(List<String> list, ItemStack[] def) {
         if (list.size() != 9) {
             throw new IllegalArgumentException();
         }
 
         List<ItemStack> recipe = new ArrayList<>();
-        for(String ingredient : list) {
-            try {
-                recipe.add(ItemUtils.getItem(ingredient));
-            } catch (IllegalArgumentException e) {
-                warn("Ingredient " + ingredient + " is not a valid item identifier! " +
-                        "You can define the itemstack in itemstacks.yml. " +
-                        "Defaulting to AIR...");
-                recipe.add(null);
+        for(int i=0;i<9;i++) {
+            String ingredient = list.get(i);
+            if (ingredient.equals("PLACEHOLDER")) {
+                recipe.add(def[i]);
+            } else {
+                try {
+                    recipe.add(ItemUtils.getItem(ingredient));
+                } catch (IllegalArgumentException e) {
+                    warn("Ingredient " + ingredient + " is not a valid item identifier! " +
+                            "You can define the itemstack in itemstacks.yml. " +
+                            "Defaulting to AIR...");
+                    recipe.add(null);
+                }
             }
         }
 
@@ -127,12 +132,12 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
         return itemstacks;
     }
 
-    public void info(String message) {
-        getLogger().log(Level.INFO, message);
+    public void info(Object message) {
+        getLogger().log(Level.INFO, message.toString());
     }
 
-    public void warn(String message) {
-        getLogger().log(Level.WARNING, message);
+    public void warn(Object message) {
+        getLogger().log(Level.WARNING, message.toString());
     }
 
 }
