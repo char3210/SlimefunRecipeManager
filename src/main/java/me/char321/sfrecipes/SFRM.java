@@ -107,7 +107,7 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
     @Override
     public String getBugTrackerURL() {
-        return null;
+        return "https://github.com/qwertyuioplkjhgfd/SlimefunRecipeManager/issues";
     }
 
     @Override
