@@ -1,6 +1,6 @@
 # SlimefunRecipeManager
 
-this slimefun addon lets you change slimefun recipes 
+this [slimefun](https://github.com/Slimefun/Slimefun4) addon lets you change slimefun recipes 
 
 ## Features
 
