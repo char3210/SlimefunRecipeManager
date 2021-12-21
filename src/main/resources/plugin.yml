@@ -1,12 +1,18 @@
 name: SlimefunRecipeManager
 version: '${project.version}'
-main: me.char321.sfrecipes.RecipePlugin
+main: me.char321.sfrecipes.SFRM
 api-version: 1.14
 depend: [ Slimefun ]
 description: A Slimefun Addon that allows you to adjust recipes. 
 
 commands:
+  sfrecipemanager:
+    aliases: sfrm
+    description: Slimefun Recipe Manager command
   genrecipes:
-    description: creates default recipes in recipes.yml and adds items to itemstacks.yml as needed
-  reload:
-    description: applies recipes in recipes.yml
+    description: ono
+
+permissions:
+  sfrm.command.reload:
+    description: Allows you to load recipes from the configuration file
+    default: op
