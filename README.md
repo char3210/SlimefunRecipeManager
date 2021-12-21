@@ -2,6 +2,8 @@
 
 this [slimefun](https://github.com/Slimefun/Slimefun4) addon lets you change slimefun recipes 
 
+**currently does not function**
+
 ## Features
 
 - change recipe and output of base slimefun items
