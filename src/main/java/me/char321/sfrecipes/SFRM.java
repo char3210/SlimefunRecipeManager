@@ -3,20 +3,26 @@ package me.char321.sfrecipes;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
+import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
+import io.github.thebusybiscuit.slimefun4.core.multiblocks.MultiBlockMachine;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.config.Config;
+import io.github.thebusybiscuit.slimefun4.libraries.dough.reflection.ReflectionUtils;
 import me.char321.sfrecipes.command.SFRMCommand;
 import me.char321.sfrecipes.command.SFRMTabCompleter;
 import me.char321.sfrecipes.utils.ItemUtils;
+import me.mrCookieSlime.Slimefun.Objects.SlimefunItem.abstractItems.MachineRecipe;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 
 public class SFRM extends JavaPlugin implements SlimefunAddon {
@@ -77,6 +83,41 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
         if(recipeType != null && !recipeType.isEmpty()) {
             //how
 
+        }
+
+        try {
+            Field field = RecipeType.class.getDeclaredField("consumer");
+            field.setAccessible(true);
+            BiConsumer<ItemStack[], ItemStack> consumer = (BiConsumer<ItemStack[], ItemStack>) field.get(target.getRecipeType());
+            if(consumer != null) {
+                warn("unsupported " + id);
+                return;
+            }
+        } catch (Exception x) {
+            x.printStackTrace();
+        }
+
+        SlimefunItem machineitem = target.getRecipeType().getMachine();
+        if(machineitem instanceof MultiBlockMachine) {
+            MultiBlockMachine machine = (MultiBlockMachine) machineitem;
+            List<ItemStack[]> recipes = machine.getRecipes();
+            int outputi = recipes.indexOf(new ItemStack[]{target.getItem()});
+            for(int i=1;i<recipes.size();i+=2) {
+                String recipeid = ItemUtils.getId(recipes.get(i)[0]);
+                if(recipeid.equals(ItemUtils.getId(target.getRecipeOutput()))) {
+                    outputi = i;
+                    break;
+                }
+            }
+            int inputi = outputi-1;
+            if(outputi == -1) {
+                warn("how " + target.getId());
+                return;
+            }
+            recipes.remove(outputi);
+            recipes.remove(inputi);
+
+            target.getRecipeType().register(target.getRecipe(), target.getRecipeOutput());
         }
     }
 
