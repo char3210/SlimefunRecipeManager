@@ -21,23 +21,33 @@ public class ItemUtils {
     }
 
     public static ItemStack getItem(String id) {
-        if(id == null || id.equals("AIR") || id.equals("null")) {
+        int amount = 1;
+        if(id.indexOf('*') != -1) {
+            amount = Integer.parseInt(id.substring(0, id.indexOf('*')));
+            id = id.substring(id.indexOf('*')+1);
+        }
+
+        if(id.equals("AIR") || id.equals("null")) {
             return null;
         }
 
-        SlimefunItem item = SlimefunItem.getById(id);
-        if(item != null) {
-            return item.getItem();
+        SlimefunItem sfitem = SlimefunItem.getById(id);
+        if(sfitem != null) {
+            ItemStack item = sfitem.getItem().clone();
+            item.setAmount(amount);
+            return item;
         }
 
         Config itemstacks = SFRM.instance().getItemstacks();
         if(itemstacks != null && itemstacks.contains(id) && itemstacks.getValue(id) instanceof ItemStack) {
-            return itemstacks.getItem(id);
+            ItemStack item = itemstacks.getItem(id).clone();
+            item.setAmount(amount);
+            return item;
         }
 
         Material material = Material.getMaterial(id);
         if(material != null) {
-            return new ItemStack(material);
+            return new ItemStack(material, amount);
         }
 
         throw new IllegalArgumentException();
@@ -46,18 +56,26 @@ public class ItemUtils {
     public static String getId(ItemStack item) {
         if(item == null) {
             return "AIR";
-        } else if(item instanceof SlimefunItemStack) {
+        }
+
+        String res;
+        if(item instanceof SlimefunItemStack) {
             SlimefunItemStack sfitem = (SlimefunItemStack)item;
-            return sfitem.getItemId();
+            res = sfitem.getItemId();
         } else {
             Optional<String> id = Slimefun.getItemDataService().getItemData(item);
             if(id.isPresent()) {
-                return id.get();
+                res = id.get();
+            } else if(item.hasItemMeta()) {
+                return null;
+            } else {
+                res = item.getType().name();
             }
-            if(item.hasItemMeta()) {
-                return "PLACEHOLDER";
-            }
-            return item.getType().name();
         }
+
+        if(item.getAmount() != 1) {
+            res = ""+item.getAmount()+"*"+res;
+        }
+        return res;
     }
 }

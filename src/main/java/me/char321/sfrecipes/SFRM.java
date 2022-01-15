@@ -2,26 +2,22 @@ package me.char321.sfrecipes;
 
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
 import io.github.thebusybiscuit.slimefun4.core.multiblocks.MultiBlockMachine;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.config.Config;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.reflection.ReflectionUtils;
+import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import me.char321.sfrecipes.command.SFRMCommand;
-import me.char321.sfrecipes.command.SFRMTabCompleter;
 import me.char321.sfrecipes.utils.ItemUtils;
-import me.mrCookieSlime.Slimefun.Objects.SlimefunItem.abstractItems.MachineRecipe;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 
@@ -55,70 +51,85 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
     public void applyRecipes() {
         info("Applying recipes from config...");
+        Map<String, Map<String, ItemStack[]>> recipeTypes = new HashMap<>();
+        List<RecipeType> typeRegistry = new ArrayList<>();
+
+        // populate recipeTypes
+        for(SlimefunItem item : Slimefun.getRegistry().getAllSlimefunItems()) {
+            RecipeType recipeType = item.getRecipeType();
+            if(!typeRegistry.contains(recipeType) && recipeType.getMachine() instanceof MultiBlockMachine) {
+                typeRegistry.add(recipeType);
+            }
+        }
+
+        for(RecipeType recipeType : typeRegistry) {
+            String recipeKey = recipeType.getKey().getKey();
+            MultiBlockMachine machine = (MultiBlockMachine) recipeType.getMachine();
+            List<ItemStack[]> machineRecipes = machine.getRecipes();
+
+            Map<String, ItemStack[]> recipeTypeRecipes = new HashMap<>();
+            for (int i = 0; i < machineRecipes.size() - 1; i+=2) {
+                ItemStack[] recipe = machineRecipes.get(i);
+                String output = ItemUtils.getId(machineRecipes.get(i+1)[0]);
+                recipeTypeRecipes.put(output, recipe);
+            }
+            recipeTypes.put(recipeKey, recipeTypeRecipes);
+        }
+
+        //apply
         for(String id : recipes.getKeys()) {
-            applyRecipe(id);
+            applyRecipe(id, recipeTypes);
+        }
+
+        //very apply
+        for(RecipeType recipeType : typeRegistry) {
+            Map<String, ItemStack[]> recipemap = recipeTypes.get(recipeType.getKey().getKey());
+            List<ItemStack[]> recipesout = new ArrayList<>();
+            for (String key : recipemap.keySet()) {
+                recipesout.add(recipemap.get(key));
+                recipesout.add(new ItemStack[]{ItemUtils.getItem(key)});
+            }
+            
+            MultiBlockMachine machine = (MultiBlockMachine) recipeType.getMachine();
+            machine.getRecipes().clear();
+            machine.getRecipes().addAll(recipesout);
         }
     }
 
-    public void applyRecipe(String id) {
+    public void applyRecipe(String id, Map<String, Map<String, ItemStack[]>> recipeTypes) {
         SlimefunItem target = SlimefunItem.getById(id);
         if(target == null) {
             warn(id + " in recipes.yml is not a valid Slimefun item!");
             return;
         }
 
-        List<String> recipe = recipes.getStringList(id + ".recipe");
+        RecipeType recipeType = target.getRecipeType();
+        Map<String, ItemStack[]> machineRecipes = recipeTypes.get(recipeType.getKey().getKey());
+        if(machineRecipes == null) {
+            warn("unsupported " + id);
+            return;
+        }
+        machineRecipes.remove(id);
+
+        List<String> recipe = this.recipes.getStringList(id + ".recipe");
         if(recipe.size() == 9) {
             target.setRecipe(deserialize(recipe, target.getRecipe()));
         }
 
-        int outputAmount = recipes.getInt(id + ".amount");
-        if(outputAmount != 0) {
+        int newOutputAmount = this.recipes.getInt(id + ".amount");
+        if(newOutputAmount != 0) {
             ItemStack targetStack = target.getItem().clone();
-            targetStack.setAmount(outputAmount);
+            targetStack.setAmount(newOutputAmount);
             target.setRecipeOutput(targetStack);
         }
 
-        String recipeType = recipes.getString(id + ".type");
-        if(recipeType != null && !recipeType.isEmpty()) {
-            //how
+        String newRecipeType = this.recipes.getString(id + ".type");
+        if(newRecipeType != null && !newRecipeType.isEmpty()) {
 
         }
 
-        try {
-            Field field = RecipeType.class.getDeclaredField("consumer");
-            field.setAccessible(true);
-            BiConsumer<ItemStack[], ItemStack> consumer = (BiConsumer<ItemStack[], ItemStack>) field.get(target.getRecipeType());
-            if(consumer != null) {
-                warn("unsupported " + id);
-                return;
-            }
-        } catch (Exception x) {
-            x.printStackTrace();
-        }
-
-        SlimefunItem machineitem = target.getRecipeType().getMachine();
-        if(machineitem instanceof MultiBlockMachine) {
-            MultiBlockMachine machine = (MultiBlockMachine) machineitem;
-            List<ItemStack[]> recipes = machine.getRecipes();
-            int outputi = recipes.indexOf(new ItemStack[]{target.getItem()});
-            for(int i=1;i<recipes.size();i+=2) {
-                String recipeid = ItemUtils.getId(recipes.get(i)[0]);
-                if(recipeid.equals(ItemUtils.getId(target.getRecipeOutput()))) {
-                    outputi = i;
-                    break;
-                }
-            }
-            int inputi = outputi-1;
-            if(outputi == -1) {
-                warn("how " + target.getId());
-                return;
-            }
-            recipes.remove(outputi);
-            recipes.remove(inputi);
-
-            target.getRecipeType().register(target.getRecipe(), target.getRecipeOutput());
-        }
+        machineRecipes.put(id, target.getRecipe());
+//        target.getRecipeType().register(target.getRecipe(), target.getRecipeOutput());
     }
 
     public ItemStack[] deserialize(List<String> list, ItemStack[] def) {

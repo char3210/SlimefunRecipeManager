@@ -30,10 +30,14 @@ public class GenRecipesCommand extends SubCommand {
             List<String> idrecipe = new ArrayList<>();
             for(ItemStack ingredient : item.getRecipe()) {
                 String ingredientid = ItemUtils.getId(ingredient);
-                idrecipe.add(ingredientid);
-                if(!ItemUtils.itemExists(ingredientid) && !ingredientid.equals("PLACEHOLDER")) {
-                    ItemStack clone = new ItemStack(ingredient);
-                    plugin.getItemstacks().setValue(ingredientid, clone);
+                if(ingredientid == null) {
+                    idrecipe.add("PLACEHOLDER");
+                } else {
+                    idrecipe.add(ingredientid);
+                    if(!ItemUtils.itemExists(ingredientid) && !ingredientid.equals("PLACEHOLDER")) {
+                        ItemStack clone = new ItemStack(ingredient);
+                        plugin.getItemstacks().setValue(ingredientid, clone);
+                    }
                 }
             }
             plugin.getRecipes().setValue(id+".recipe", idrecipe.toArray(new String[0]));
