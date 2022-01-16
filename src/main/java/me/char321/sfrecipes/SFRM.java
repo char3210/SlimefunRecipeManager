@@ -15,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
     public void applyRecipes() {
         info("Applying recipes from config...");
-        Map<String, Map<String, ItemStack[]>> recipeTypes = new HashMap<>();
+        Map<String, Map<List<ItemStack>, String>> recipeTypes = new HashMap<>();
         List<RecipeType> typeRegistry = new ArrayList<>();
 
         // populate recipeTypes
@@ -64,14 +65,19 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
         for(RecipeType recipeType : typeRegistry) {
             String recipeKey = recipeType.getKey().getKey();
+
             MultiBlockMachine machine = (MultiBlockMachine) recipeType.getMachine();
             List<ItemStack[]> machineRecipes = machine.getRecipes();
 
-            Map<String, ItemStack[]> recipeTypeRecipes = new HashMap<>();
+            Map<List<ItemStack>, String> recipeTypeRecipes = new HashMap<>();
             for (int i = 0; i < machineRecipes.size() - 1; i+=2) {
-                ItemStack[] recipe = machineRecipes.get(i);
+                ItemStack[] recipe1 = machineRecipes.get(i);
+                List<ItemStack> recipe = Arrays.asList(recipe1);
                 String output = ItemUtils.getId(machineRecipes.get(i+1)[0]);
-                recipeTypeRecipes.put(output, recipe);
+                String prev = recipeTypeRecipes.put(recipe, output);
+                if(prev != null) {
+                    warn("FRICK " + output + prev);
+                }
             }
             recipeTypes.put(recipeKey, recipeTypeRecipes);
         }
@@ -83,20 +89,20 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
         //very apply
         for(RecipeType recipeType : typeRegistry) {
-            Map<String, ItemStack[]> recipemap = recipeTypes.get(recipeType.getKey().getKey());
+            Map<List<ItemStack>, String> recipemap = recipeTypes.get(recipeType.getKey().getKey());
             List<ItemStack[]> recipesout = new ArrayList<>();
-            for (String key : recipemap.keySet()) {
-                recipesout.add(recipemap.get(key));
-                recipesout.add(new ItemStack[]{ItemUtils.getItem(key)});
+            for (List<ItemStack> key : recipemap.keySet()) {
+                recipesout.add(key.toArray(new ItemStack[0]));
+                recipesout.add(new ItemStack[]{ItemUtils.getItem(recipemap.get(key))});
             }
-            
+
             MultiBlockMachine machine = (MultiBlockMachine) recipeType.getMachine();
             machine.getRecipes().clear();
             machine.getRecipes().addAll(recipesout);
         }
     }
 
-    public void applyRecipe(String id, Map<String, Map<String, ItemStack[]>> recipeTypes) {
+    public void applyRecipe(String id, Map<String, Map<List<ItemStack>, String>> recipeTypes) {
         SlimefunItem target = SlimefunItem.getById(id);
         if(target == null) {
             warn(id + " in recipes.yml is not a valid Slimefun item!");
@@ -104,12 +110,12 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
         }
 
         RecipeType recipeType = target.getRecipeType();
-        Map<String, ItemStack[]> machineRecipes = recipeTypes.get(recipeType.getKey().getKey());
+        Map<List<ItemStack>, String> machineRecipes = recipeTypes.get(recipeType.getKey().getKey());
         if(machineRecipes == null) {
             warn("unsupported " + id);
             return;
         }
-        machineRecipes.remove(id);
+        machineRecipes.remove(Arrays.asList(target.getRecipe()));
 
         List<String> recipe = this.recipes.getStringList(id + ".recipe");
         if(recipe.size() == 9) {
@@ -125,11 +131,10 @@ public class SFRM extends JavaPlugin implements SlimefunAddon {
 
         String newRecipeType = this.recipes.getString(id + ".type");
         if(newRecipeType != null && !newRecipeType.isEmpty()) {
-
+            recipeTypes.get(newRecipeType).put(Arrays.asList(target.getRecipe()), id);
+        } else {
+            machineRecipes.put(Arrays.asList(target.getRecipe()), id);
         }
-
-        machineRecipes.put(id, target.getRecipe());
-//        target.getRecipeType().register(target.getRecipe(), target.getRecipeOutput());
     }
 
     public ItemStack[] deserialize(List<String> list, ItemStack[] def) {
